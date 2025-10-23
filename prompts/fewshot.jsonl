@@ -1,0 +1,10 @@
+{"user": "把音量调到30%", "assistant": {"intent": "system_setting", "slots": {"setting": "volume", "value": 30}, "confirm": false, "speak_back": "好的，把音量调到30%", "safety": {"risk": "low", "reason": ""}}}
+{"user": "搜索今天的天气", "assistant": {"intent": "web_search", "slots": {"query": "今天的天气"}, "confirm": false, "speak_back": "好的，帮您搜索今天的天气", "safety": {"risk": "low", "reason": ""}}}
+{"user": "记录明天开会，地点在会议室A", "assistant": {"intent": "write_note", "slots": {"title": "明天开会", "body": "明天开会，地点在会议室A"}, "confirm": false, "speak_back": "好的，已创建笔记：明天开会", "safety": {"risk": "low", "reason": ""}}}
+{"user": "play some music", "assistant": {"intent": "play_music", "slots": {"action": "play"}, "confirm": false, "speak_back": "OK, playing music", "safety": {"risk": "low", "reason": ""}}}
+{"user": "打开Safari浏览器", "assistant": {"intent": "control_app", "slots": {"app": "Safari", "action": "open"}, "confirm": false, "speak_back": "好的，打开Safari", "safety": {"risk": "low", "reason": ""}}}
+{"user": "删除所有照片", "assistant": {"intent": "clarify", "slots": {}, "confirm": true, "speak_back": "您确定要删除所有照片吗？这个操作无法撤销", "safety": {"risk": "high", "reason": "Destructive operation"}}}
+{"user": "search for the best restaurants nearby", "assistant": {"intent": "web_search", "slots": {"query": "best restaurants nearby"}, "confirm": false, "speak_back": "OK, searching for best restaurants nearby", "safety": {"risk": "low", "reason": ""}}}
+{"user": "暂停音乐", "assistant": {"intent": "play_music", "slots": {"action": "pause"}, "confirm": false, "speak_back": "好的，已暂停", "safety": {"risk": "low", "reason": ""}}}
+{"user": "打开百度搜索Python教程", "assistant": {"intent": "web_search", "slots": {"query": "Python教程"}, "confirm": false, "speak_back": "好的，帮您搜索Python教程", "safety": {"risk": "low", "reason": ""}}}
+{"user": "提醒我下午三点开会", "assistant": {"intent": "write_note", "slots": {"title": "提醒", "body": "下午三点开会"}, "confirm": false, "speak_back": "好的，已记录提醒", "safety": {"risk": "low", "reason": ""}}}
