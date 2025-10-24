@@ -1,16 +1,17 @@
 """
 LLM client for Anthropic Claude API.
 Only produces JSON output, with retry on failure.
+支持单步 Intent 和多步 Plan。(Supports single-step Intent and multi-step Plan)
 """
 import json
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 import anthropic
 from pydantic import ValidationError
 
 from .config import config
-from .schema import Intent
+from .schema import Intent, Plan
 from .utils import logger
 
 
@@ -147,6 +148,123 @@ Rules:
             speak_back="抱歉，我没理解您的意思，能再说一遍吗？",
             safety={"risk": "low", "reason": "LLM parsing failed"}
         )
+
+    def call_llm_to_plan(self, text: str) -> Union[Intent, Plan]:
+        """
+        调用 LLM 解析用户输入，返回单步 Intent 或多步 Plan。
+        (Call LLM to parse user text into either Intent or Plan)
+
+        Args:
+            text: User utterance
+
+        Returns:
+            Union[Intent, Plan]: Either a single Intent or a Plan with multiple Intents
+
+        Raises:
+            ValueError: If all retries fail
+        """
+        system_prompt = self._load_plan_system_prompt()
+        fewshot = self._load_fewshot_examples()
+
+        user_message = f"{fewshot}\n\nNow parse this user request:\nUser: {text}\n\nOutput only JSON:"
+
+        for attempt in range(config.LLM_MAX_RETRIES):
+            try:
+                logger.info(f"LLM plan call attempt {attempt + 1}/{config.LLM_MAX_RETRIES}")
+
+                message = self.client.messages.create(
+                    model=self.model,
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature,
+                    system=system_prompt,
+                    messages=[
+                        {"role": "user", "content": user_message}
+                    ]
+                )
+
+                # Extract text content
+                response_text = ""
+                for block in message.content:
+                    if block.type == "text":
+                        response_text += block.text
+
+                logger.debug(f"LLM response: {response_text}")
+
+                # Try to parse JSON
+                parsed = self._extract_json(response_text)
+                if parsed:
+                    # Try Plan first (has "plan" key), then Intent
+                    if "plan" in parsed:
+                        try:
+                            plan = Plan(**parsed)
+                            logger.info(f"Successfully parsed Plan with {len(plan.plan)} steps")
+                            return plan
+                        except ValidationError as e:
+                            logger.error(f"Plan validation failed: {e}")
+                    else:
+                        try:
+                            intent = Intent(**parsed)
+                            logger.info(f"Successfully parsed single Intent: {intent.intent}")
+                            return intent
+                        except ValidationError as e:
+                            logger.error(f"Intent validation failed: {e}")
+
+                # If first attempt failed, retry with correction prompt
+                if attempt == 0:
+                    user_message = f"The previous output was invalid. Please output ONLY valid JSON matching the schema. User request: {text}"
+                    continue
+
+            except Exception as e:
+                logger.error(f"LLM call failed: {e}")
+
+        # All retries failed, return clarify intent
+        logger.warning("All LLM retries failed, returning clarify intent")
+        return Intent(
+            intent="clarify",
+            confirm=True,
+            speak_back="抱歉，我没理解您的意思，能再说一遍吗？",
+            safety={"risk": "low", "reason": "LLM parsing failed"}
+        )
+
+    def _load_plan_system_prompt(self) -> str:
+        """
+        加载支持多步骤规划的 system prompt。
+        (Load system prompt that supports multi-step planning)
+        """
+        prompt_path = config.PROMPTS_DIR / "system_plan.txt"
+        if prompt_path.exists():
+            return prompt_path.read_text(encoding="utf-8").strip()
+
+        # Fallback to default multi-step prompt
+        return """You are a Command Planner for a macOS voice assistant.
+
+Your job is to parse user requests and output valid JSON.
+
+For SINGLE-STEP tasks, output:
+{
+  "intent": "system_setting|play_music|web_search|write_note|control_app|clarify",
+  "slots": {},
+  "confirm": false,
+  "speak_back": "",
+  "safety": {"risk": "low|medium|high", "reason": ""}
+}
+
+For MULTI-STEP tasks (e.g., "open Safari then search Python tutorial, then set volume to 30%"), output:
+{
+  "plan": [
+    {"intent": "...", "slots": {...}, "confirm": false, "speak_back": "...", "safety": {...}},
+    {"intent": "...", "slots": {...}, "confirm": false, "speak_back": "...", "safety": {...}}
+  ],
+  "summary": "Brief description of the plan"
+}
+
+Rules:
+1. Output ONLY minified JSON, no markdown, no prose, no explanations
+2. For multi-step: detect keywords like "然后|接着|之后|再|，" (then, next, after, again, comma)
+3. Each step in "plan" must be a valid Intent object
+4. If any step is unsafe/ambiguous → that step has confirm=true, safety.risk="high"
+5. speak_back should be brief (< 20 words) in user's language
+6. summary explains the overall plan in one sentence"""
 
     def _extract_json(self, text: str) -> Optional[dict]:
         """Extract JSON from response text."""

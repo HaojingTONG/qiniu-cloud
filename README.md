@@ -4,14 +4,15 @@ A modular, voice-activated OS assistant for macOS that uses LLM (Claude) for int
 
 ## Features
 
-- **Voice/Text Input**: ASR placeholder (currently text input) with future support for speech recognition
-- **LLM Intent Parsing**: Uses Anthropic Claude API to understand natural language commands
-- **Rule-Based Fallback**: Automatic fallback to keyword-based rules when LLM fails
-- **Strict Schema Validation**: All LLM outputs validated by Pydantic
-- **macOS Integration**: Execute commands via AppleScript and shell
-- **Safety First**: Dangerous commands require confirmation
-- **Dry-Run Mode**: Test without executing commands
-- **TTS Feedback**: Speaks results using macOS `say` command
+- **🔊 Voice/Text Input**: Real macOS speech recognition or text input
+- **🤖 LLM Intent Parsing**: Uses Anthropic Claude API to understand natural language commands
+- **🔗 Multi-Step Task Chaining**: Execute multiple commands in sequence (NEW!)
+- **🔄 Rule-Based Fallback**: Automatic fallback to keyword-based rules when LLM fails
+- **✅ Strict Schema Validation**: All LLM outputs validated by Pydantic
+- **🖥️ macOS Integration**: Execute commands via AppleScript and shell
+- **🛡️ Safety First**: Dangerous commands require confirmation
+- **🧪 Dry-Run Mode**: Test without executing commands
+- **🔊 TTS Feedback**: Speaks results using macOS `say` command
 
 ## Supported Intents
 
@@ -21,6 +22,29 @@ A modular, voice-activated OS assistant for macOS that uses LLM (Claude) for int
 4. **write_note**: Create notes in Notes app
 5. **control_app**: Open/control applications
 6. **clarify**: Request clarification for ambiguous/unsafe commands
+
+## 🔗 Multi-Step Task Chaining (NEW!)
+
+Execute multiple commands in sequence with a single request:
+
+```bash
+# Two-step: Open app then search
+python app/main.py run --text "打开Safari然后搜索Python教程"
+
+# Three-step: Search, note, and adjust volume
+python app/main.py run --text "搜索天气，记录今天心情不错，把音量调到50%"
+
+# Preview plan without executing
+python app/main.py run --text "打开Safari然后搜索Python" --plan-debug
+```
+
+**How it works:**
+- LLM detects multi-step keywords (然后, 接着, then, next, etc.)
+- Generates a Plan with multiple Intent steps
+- Executes sequentially, stops on first failure
+- Safety confirmation for dangerous operations
+
+**See [MULTI_STEP.md](MULTI_STEP.md) for complete documentation.**
 
 ## Project Structure
 
@@ -134,11 +158,12 @@ Output: "您确定要执行「删除所有文件」吗？这可能有风险。" 
 ## CLI Options
 
 ```bash
-python app/main.py [OPTIONS]
+python app/main.py run [OPTIONS]
 
 Options:
   --text, -t TEXT    Direct text input (skip ASR)
   --dry-run          Only show what would be executed
+  --plan-debug       Show plan without executing (for multi-step)
   --no-llm           Use rule-based only (no API calls)
   --loop, -l         Continuous listening mode
   --help             Show help message
@@ -163,15 +188,18 @@ Options:
 ## Testing
 
 ```bash
-# Test with provided CSV tasks (rule-based, ~70% accuracy expected)
+# Test single-step intents with provided CSV tasks (rule-based, ~70% accuracy expected)
 python tests/replay.py
 
-# Test with LLM (~90% accuracy expected)
+# Test single-step with LLM (~90% accuracy expected)
 python tests/replay.py --llm
 
+# Test multi-step planning (NEW!)
+python tests/plan_replay.py
+
 # Add your own test cases
-# Edit tests/tasks.csv and add rows:
-# utterance,expected_intent,expected_slots
+# Single-step: Edit tests/tasks.csv
+# Multi-step: Edit tests/plan_tasks.csv
 ```
 
 ## Safety Features
@@ -183,11 +211,10 @@ python tests/replay.py --llm
 
 ## Limitations & Future Work
 
-- **ASR**: Currently uses text input; plan to integrate faster-whisper or macOS dictation
 - **TTS**: Uses basic `say` command; could improve with better voice/speed control
-- **Intents**: Currently 6 intents; can extend to more macOS automation
-- **Multi-step**: No support yet for complex multi-step workflows
+- **Intents**: Currently 6 intents; can extend to more macOS automation (file operations, notifications, etc.)
 - **Context**: No conversation history or context tracking
+- **Cross-step dependencies**: Multi-step tasks execute independently, no data passing between steps yet
 
 ## Troubleshooting
 

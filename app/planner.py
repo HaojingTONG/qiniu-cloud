@@ -1,13 +1,14 @@
 """
 Planner orchestrates intent recognition.
 Priority: LLM → rule-based fallback on failure.
+支持单步 Intent 和多步 Plan。(Supports single-step Intent and multi-step Plan)
 """
 import logging
 import re
-from typing import Optional
+from typing import Optional, Union
 
 from .config import config
-from .schema import Intent
+from .schema import Intent, Plan
 from .llm import get_llm_client
 from .utils import logger
 
@@ -91,6 +92,96 @@ class Planner:
 
         # Fallback to rule-based
         return self._rule_based_plan(text)
+
+    def parse_plan_or_intent(self, text: str, dry_run: bool = False) -> Union[Intent, Plan]:
+        """
+        解析用户输入，返回单步 Intent 或多步 Plan。
+        (Parse user input and return either a single Intent or a multi-step Plan)
+
+        策略：LLM 判断是否为多步任务，输出 Intent 或 Plan。
+        (Strategy: LLM determines if it's multi-step and outputs Intent or Plan)
+
+        Args:
+            text: User utterance
+            dry_run: If True, skip actual LLM call
+
+        Returns:
+            Union[Intent, Plan]: Either a single Intent or a Plan with multiple Intents
+        """
+        logger.info(f"Parsing plan or intent for text: {text}")
+
+        # Try LLM first
+        if self.use_llm and not dry_run:
+            try:
+                result = self.llm_client.call_llm_to_plan(text)
+
+                # Check if result is Plan or Intent
+                if isinstance(result, Plan):
+                    logger.info(f"LLM returned Plan with {len(result.plan)} steps")
+                    # Enhance safety check for each intent in plan
+                    for i, intent in enumerate(result.plan):
+                        result.plan[i] = self._enhance_safety(intent, text)
+                    return result
+                else:
+                    logger.info(f"LLM returned single Intent: {result.intent}")
+                    result = self._enhance_safety(result, text)
+                    return result
+
+            except Exception as e:
+                logger.error(f"LLM planning failed: {e}, falling back to single intent")
+
+        # Fallback: check if text contains multi-step indicators
+        if self._is_multi_step_text(text):
+            # Split by common delimiters and create Plan
+            intents = self._split_to_intents(text)
+            if len(intents) > 1:
+                return Plan(
+                    plan=intents,
+                    summary=f"执行{len(intents)}个任务"
+                )
+
+        # Default to single intent
+        return self._rule_based_plan(text)
+
+    def _is_multi_step_text(self, text: str) -> bool:
+        """
+        检测文本是否包含多步骤指示词。
+        (Detect if text contains multi-step indicators)
+        """
+        multi_step_keywords = [
+            r"然后|接着|之后|再|完成后",  # then, next, after, again
+            r"，.{3,}，",  # Multiple clauses separated by commas
+            r"。.{3,}。",  # Multiple sentences
+            r"接下来|下一步|最后",  # next, next step, finally
+        ]
+
+        for pattern in multi_step_keywords:
+            if re.search(pattern, text):
+                logger.info(f"Multi-step indicator detected: {pattern}")
+                return True
+        return False
+
+    def _split_to_intents(self, text: str) -> list[Intent]:
+        """
+        简单拆分多步任务为单步 Intent 列表（规则引擎回退逻辑）。
+        (Simple splitting of multi-step task into list of Intents - rule engine fallback)
+        """
+        # Split by common delimiters
+        parts = re.split(r'[，。、]|然后|接着|之后|再|接下来', text)
+        intents = []
+
+        for part in parts:
+            part = part.strip()
+            if len(part) > 2:  # Skip very short parts
+                try:
+                    intent = self._rule_based_plan(part)
+                    if intent.intent != "clarify":  # Only add valid intents
+                        intents.append(intent)
+                except Exception as e:
+                    logger.warning(f"Failed to parse part '{part}': {e}")
+                    continue
+
+        return intents if intents else [self._rule_based_plan(text)]
 
     def _rule_based_plan(self, text: str) -> Intent:
         """

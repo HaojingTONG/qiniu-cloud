@@ -1,0 +1,14 @@
+utterance,expected_type,expected_steps,description
+打开Safari然后搜索Python教程,plan,2,Open Safari and search
+搜索今天的天气，然后把音量调到50%,plan,2,Search and adjust volume
+记录明天开会，然后提醒我下午三点,plan,2,Create note and reminder
+播放音乐，然后记录今天完成了项目报告,plan,2,Play music and create note
+打开Safari，搜索机器学习教程，然后播放音乐,plan,3,Open Safari, search, play music
+搜索Python，记录学习笔记，把音量调到30%,plan,3,Search, note, volume
+打开微信，然后打开Safari，最后搜索天气,plan,3,Open WeChat, Safari, search weather
+把音量调到40%，播放音乐，记录今天心情不错,plan,3,Volume, music, note
+search for weather, then play music,plan,2,English multi-step
+open Safari, search for tutorials, set volume to 50%,plan,3,English 3-step
+把音量调到30%,intent,1,Single-step should return Intent
+搜索Python,intent,1,Single-step search
+打开Safari,intent,1,Single-step app control

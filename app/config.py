@@ -37,6 +37,12 @@ class Config:
     LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "1024"))
     LLM_MAX_RETRIES: int = int(os.getenv("LLM_MAX_RETRIES", "2"))
 
+    # ASR settings
+    ASR_ENGINE: str = os.getenv("ASR_ENGINE", "macos")  # macos, text, whisper
+    ASR_LANGUAGE: str = os.getenv("ASR_LANGUAGE", "zh-CN")  # zh-CN, en-US
+    ASR_TIMEOUT: int = int(os.getenv("ASR_TIMEOUT", "5"))
+    ASR_PHRASE_LIMIT: int = int(os.getenv("ASR_PHRASE_LIMIT", "10"))
+
     # Paths
     PROJECT_ROOT: Path = project_root
     PROMPTS_DIR: Path = project_root / "prompts"
