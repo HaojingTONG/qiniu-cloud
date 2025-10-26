@@ -1,5 +1,6 @@
 # Voice OS - 智能语音助手
 # 议题中的四个问题，请看docs/PRODUCT_PLAN.md
+# demo视频，请看demo.mp4
 
 🎤 **用自然语言控制你的 macOS**
 
