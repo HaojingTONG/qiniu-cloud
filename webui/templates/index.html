@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice OS - 语音控制助手</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🎙️ Voice OS</h1>
+                <p class="subtitle">语音控制助手 - 可视化界面</p>
+            </div>
+            <div class="status-badge" id="connectionStatus">
+                <span class="status-dot"></span>
+                <span class="status-text">连接中...</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel: Current Status -->
+            <div class="panel left-panel">
+                <h2>📊 当前状态</h2>
+
+                <!-- ASR Status -->
+                <div class="status-section">
+                    <h3>🎤 语音识别</h3>
+                    <div class="status-card" id="asrStatus">
+                        <div class="status-icon">⏸️</div>
+                        <div class="status-info">
+                            <div class="status-label">状态</div>
+                            <div class="status-value">等待中...</div>
+                        </div>
+                    </div>
+                    <div class="transcript" id="transcript">
+                        <div class="transcript-label">识别文本：</div>
+                        <div class="transcript-text">—</div>
+                    </div>
+                </div>
+
+                <!-- Current Plan -->
+                <div class="status-section">
+                    <h3>📝 当前计划</h3>
+                    <div class="plan-card" id="currentPlan">
+                        <div class="plan-empty">暂无活动任务</div>
+                    </div>
+                </div>
+
+                <!-- TTS Status -->
+                <div class="status-section">
+                    <h3>🔊 语音反馈</h3>
+                    <div class="tts-status" id="ttsStatus">
+                        <div class="tts-text">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Execution Progress -->
+            <div class="panel right-panel">
+                <h2>⚡ 执行进度</h2>
+
+                <!-- Progress Bar -->
+                <div class="progress-section" id="progressSection" style="display: none;">
+                    <div class="progress-header">
+                        <span class="progress-label" id="progressLabel">执行中...</span>
+                        <span class="progress-percentage" id="progressPercentage">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+
+                <!-- Execution Steps -->
+                <div class="steps-container" id="stepsContainer">
+                    <div class="steps-empty">等待任务...</div>
+                </div>
+
+                <!-- Confirmation Dialog -->
+                <div class="confirmation-dialog" id="confirmationDialog" style="display: none;">
+                    <div class="confirmation-content">
+                        <div class="confirmation-icon">⚠️</div>
+                        <div class="confirmation-message" id="confirmationMessage"></div>
+                        <div class="confirmation-buttons">
+                            <button class="btn btn-confirm" onclick="handleConfirm(true)">✓ 确认</button>
+                            <button class="btn btn-cancel" onclick="handleConfirm(false)">✗ 取消</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Continue Dialog -->
+                <div class="continue-dialog" id="continueDialog" style="display: none;">
+                    <div class="continue-content">
+                        <div class="continue-icon">🎤</div>
+                        <div class="continue-message">准备就绪！</div>
+                        <div class="continue-hint">点击下方按钮开始语音指令</div>
+                        <div class="continue-buttons">
+                            <button class="btn btn-continue" onclick="handleContinue(true)">🎤 开始录音</button>
+                            <button class="btn btn-stop" onclick="handleContinue(false)">⏹️ 停止</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom: Event Log -->
+        <div class="event-log-panel">
+            <div class="event-log-header">
+                <h3>📋 事件日志</h3>
+                <button class="btn btn-small" onclick="clearEventLog()">清空</button>
+            </div>
+            <div class="event-log" id="eventLog"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

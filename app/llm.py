@@ -296,6 +296,112 @@ Rules:
 
         return None
 
+    def generate_article(
+        self,
+        topic: str,
+        tone: str = "informative",
+        length: int = 1000
+    ) -> dict:
+        """
+        生成完整文章（标题、引言、主体、结论）。
+        (Generate a complete article with title, introduction, body, conclusion)
+
+        Args:
+            topic: 文章主题 (Article topic)
+            tone: 语气风格 (Tone: informative, personal, academic, casual)
+            length: 目标字数 (Target word count)
+
+        Returns:
+            dict: {
+                "title": "文章标题",
+                "content": "完整Markdown内容",
+                "summary": "一句话摘要"
+            }
+        """
+        logger.info(f"Generating article on topic: {topic}, tone: {tone}, length: {length}")
+
+        # 构建 prompt (Build prompt)
+        system_prompt = """你是一名专业的文章作者，擅长撰写结构清晰、内容丰富的文章。
+你的任务是根据用户提供的主题，创作一篇完整的文章。
+
+You are a professional article writer skilled at creating well-structured, informative articles.
+Your task is to write a complete article based on the user's topic."""
+
+        user_prompt = f"""请根据以下要求写一篇完整的文章：
+
+**主题 (Topic)**: {topic}
+**语气 (Tone)**: {tone}
+**目标长度 (Target Length)**: 约 {length} 字 (around {length} characters)
+
+**要求 (Requirements)**:
+1. 使用 Markdown 格式
+2. 包含以下结构：
+   - 标题 (# Title)
+   - 引言 (Introduction) - 简要介绍主题背景和重要性
+   - 主体内容 (Body) - 2-3个小节，深入探讨主题
+   - 总结 (Conclusion) - 概括要点和展望未来
+3. 语言流畅，逻辑清晰
+4. 内容原创，有深度
+
+请直接输出 Markdown 格式的完整文章，不要包含任何解释性文字。"""
+
+        try:
+            # 调用 Claude API (Call Claude API)
+            message = self.client.messages.create(
+                model=self.model,
+                max_tokens=4096,  # 文章需要更多 tokens (Articles need more tokens)
+                temperature=0.7,  # 创作性任务提高温度 (Higher temperature for creative tasks)
+                system=system_prompt,
+                messages=[
+                    {"role": "user", "content": user_prompt}
+                ]
+            )
+
+            # 提取文章内容 (Extract article content)
+            article_text = ""
+            for block in message.content:
+                if block.type == "text":
+                    article_text += block.text
+
+            logger.debug(f"Generated article length: {len(article_text)} chars")
+
+            # 解析标题 (Parse title)
+            title = "未命名文章"
+            title_match = article_text.split("\n")[0]
+            if title_match.startswith("#"):
+                title = title_match.strip("# ").strip()
+
+            # 生成摘要 (Generate summary)
+            # 提取第一段作为摘要 (Use first paragraph as summary)
+            lines = article_text.split("\n")
+            summary_lines = []
+            for line in lines[1:]:  # Skip title
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    summary_lines.append(line)
+                    if len(summary_lines) >= 2:  # 取前两个非标题段落 (Take first 2 non-title paragraphs)
+                        break
+
+            summary = " ".join(summary_lines)[:200] + "..." if summary_lines else "文章已生成"
+
+            result = {
+                "title": title,
+                "content": article_text,
+                "summary": summary
+            }
+
+            logger.info(f"Article generated successfully: {title}")
+            return result
+
+        except Exception as e:
+            logger.error(f"Article generation failed: {e}")
+            # 返回错误文章 (Return error article)
+            return {
+                "title": f"关于{topic}的文章",
+                "content": f"# 关于{topic}的文章\n\n抱歉，文章生成失败。请稍后重试。\n\n错误信息：{str(e)}",
+                "summary": "文章生成失败"
+            }
+
 
 # Singleton instance
 _llm_client: Optional[LLMClient] = None

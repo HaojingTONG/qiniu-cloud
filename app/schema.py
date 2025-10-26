@@ -11,7 +11,14 @@ IntentName = Literal[
     "play_music",
     "web_search",
     "write_note",
+    "write_article",  # 文章写作 (Article writing)
     "control_app",
+    "file_read",      # 文件读取 (File read)
+    "file_write",     # 文件写入 (File write)
+    "file_move",      # 文件移动 (File move)
+    "file_copy",      # 文件复制 (File copy)
+    "file_delete",    # 文件删除 (File delete)
+    "file_list",      # 列出文件 (List files)
     "clarify"
 ]
 
@@ -46,3 +53,4 @@ class ExecutionResult(BaseModel):
     message: str
     output: str = ""
     error: str = ""
+    file_path: str = ""  # 文件路径（用于文件操作）

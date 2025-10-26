@@ -5,9 +5,20 @@ python-dotenv>=1.0.0
 anthropic>=0.40.0
 rich>=13.0.0
 
-# Speech Recognition (macOS native)
+# Speech Recognition - Google API (优化参数)
 SpeechRecognition>=3.10.0
 pyaudio>=0.2.13
 
-# Optional: for future enhancements
-# faster-whisper>=0.10.0  # For Whisper ASR (offline, higher accuracy)
+# Whisper ASR (离线，高准确率 90-95%)
+openai-whisper>=20231117
+# Whisper 依赖
+sounddevice>=0.4.6
+soundfile>=0.12.1
+numpy>=1.24.0
+
+# 可选：更快的 Whisper 实现（如需要可启用）
+# faster-whisper>=0.10.0  # 更快的推理速度，相同准确率
+
+# Web UI dependencies
+Flask>=2.3.0
+flask-cors>=4.0.0
